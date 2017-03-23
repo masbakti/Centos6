@@ -1,10 +1,11 @@
-#!/bin/bash
 
-# initialisasi var
-OS=`uname -p`;
+#!/bin/bash
 
 # go to root
 cd
+
+# set time GMT +7
+ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 
 # set locale
 sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
@@ -23,17 +24,6 @@ wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
 wget http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
 rpm -Uvh epel-release-6-8.noarch.rpm
 rpm -Uvh remi-release-6.rpm
-
-if [ "$OS" == "x86_64" ]; then
-  wget http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
-  rpm -Uvh rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
-else
-  wget http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.i686.rpm
-  rpm -Uvh rpmforge-release-0.5.3-1.el6.rf.i686.rpm
-fi
-
-sed -i 's/enabled = 1/enabled = 0/g' /etc/yum.repos.d/rpmforge.repo
-sed -i -e "/^\[remi\]/,/^\[.*\]/ s|^\(enabled[ \t]*=[ \t]*0\\)|enabled=1|" /etc/yum.repos.d/remi.repo
 rm -f *.rpm
 
 # remove unused
@@ -52,11 +42,9 @@ chkconfig nginx on
 chkconfig php-fpm on
 
 # install essential package
-yum -y install rrdtool screen htop nmap bc nethogs openvpn vnstat ngrep mtr git zsh mrtg unrar rsyslog rkhunter mrtg net-snmp net-snmp-utils expect nano bind-utils
+yum -y install htop nmap bc nethogs openvpn vnstat ngrep mtr git zsh mrtg unrar rsyslog rkhunter mrtg net-snmp net-snmp-utils expect nano bind-utils
 yum -y groupinstall 'Development Tools'
 yum -y install cmake
-
-yum -y --enablerepo=rpmforge install axel sslh ptunnel unrar
 
 # matiin exim
 service exim stop
@@ -75,15 +63,15 @@ cd
 wget https://raw.githubusercontent.com/masbakti/vps/master/screenfetch-dev
 mv screenfetch-dev /usr/bin/screenfetch
 chmod +x /usr/bin/screenfetch
-echo "clear" >> .bash_profile
-echo "screenfetch" >> .bash_profile
+echo "clear" >> .bashrc
+echo "screenfetch" >> .bashrc
 
 # install webserver
 cd
 wget -O /etc/nginx/nginx.conf "https://raw.githubusercontent.com/masbakti/vps/master/nginx.conf"
 sed -i 's/www-data/nginx/g' /etc/nginx/nginx.conf
 mkdir -p /home/vps/public_html
-echo "<pre>Setup by Masbakti</pre>" > /home/vps/public_html/index.html
+echo "<pre>Setup by Masbakti | WA: 085790808469</pre>" > /home/vps/public_html/index.html
 echo "<?php phpinfo(); ?>" > /home/vps/public_html/info.php
 rm /etc/nginx/conf.d/*
 wget -O /etc/nginx/conf.d/vps.conf "https://raw.githubusercontent.com/masbakti/vps/master/vps.conf"
@@ -92,11 +80,13 @@ chmod -R +rx /home/vps
 service php-fpm restart
 service nginx restart
 
+
 # install openvpn
 wget -O /etc/openvpn/openvpn.tar "https://github.com/masbakti/vps/raw/master/openvpn-debian.tar"
 cd /etc/openvpn/
 tar xf openvpn.tar
 wget -O /etc/openvpn/1194.conf "https://raw.githubusercontent.com/masbakti/vps/master/1194-centos.conf"
+OS=`uname -p`;
 if [ "$OS" == "x86_64" ]; then
   wget -O /etc/openvpn/1194.conf "https://raw.githubusercontent.com/masbakti/vps/master/1194-centos64.conf"
 fi
@@ -128,9 +118,6 @@ cd
 
 # install badvpn
 wget -O /usr/bin/badvpn-udpgw "https://raw.githubusercontent.com/masbakti/vps/master/badvpn-udpgw"
-if [ "$OS" == "x86_64" ]; then
-  wget -O /usr/bin/badvpn-udpgw "https://raw.githubusercontent.com/masbakti/vps/master/badvpn-udpgw64"
-fi
 sed -i '$ i\screen -AmdS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300' /etc/rc.local
 sed -i '$ i\screen -AmdS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300' /etc/rc.d/rc.local
 chmod +x /usr/bin/badvpn-udpgw
@@ -157,8 +144,8 @@ LANG=C /usr/bin/mrtg /etc/mrtg/mrtg.cfg
 cd
 
 # setting port ssh
-sed -i '/Port 22/a Port 143' /etc/ssh/sshd_config
-sed -i 's/#Port 22/Port  22/g' /etc/ssh/sshd_config
+echo "Port 143" >> /etc/ssh/sshd_config
+echo "Port  22" >> /etc/ssh/sshd_config
 service sshd restart
 chkconfig sshd on
 
@@ -197,19 +184,11 @@ chkconfig squid on
 
 # install webmin
 cd
-wget http://prdownloads.sourceforge.net/webadmin/webmin-1.670-1.noarch.rpm
-rpm -i webmin-1.670-1.noarch.rpm;
-rm webmin-1.670-1.noarch.rpm
+wget http://prdownloads.sourceforge.net/webadmin/webmin-1.660-1.noarch.rpm
+rpm -i webmin-1.660-1.noarch.rpm;
+rm webmin-1.660-1.noarch.rpm
 service webmin restart
 chkconfig webmin on
-
-# pasang bmon
-if [ "$OS" == "x86_64" ]; then
-  wget -O /usr/bin/bmon "https://raw.githubusercontent.com/masbakti/vps/master/bmon64"
-else
-  wget -O /usr/bin/bmon "https://raw.githubusercontent.com/masbakti/vps/master/bmon"
-fi
-chmod +x /usr/bin/bmon
 
 # downlaod script
 cd
@@ -244,9 +223,6 @@ chmod +x cek
 service crond start
 chkconfig crond on
 
-# set time GMT +7
-ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
-
 # finalisasi
 chown -R nginx:nginx /home/vps/public_html
 service nginx start
@@ -264,52 +240,40 @@ chkconfig crond on
 
 # info
 clear
-echo "Auto Installer by Masbakti" | tee log-install.txt
-echo "===============================================" | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Service"  | tee -a log-install.txt
-echo "-------"  | tee -a log-install.txt
-echo "OpenVPN  : TCP 1194 (client config : http://$MYIP/client.tar)"  | tee -a log-install.txt
-echo "OpenSSH  : 22, 143"  | tee -a log-install.txt
-echo "Dropbear : 109, 110, 443"  | tee -a log-install.txt
-echo "Squid3   : 8080 (limit to IP SSH)"  | tee -a log-install.txt
-echo "badvpn   : badvpn-udpgw port 7300"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Tools"  | tee -a log-install.txt
-echo "-----"  | tee -a log-install.txt
-echo "axel"  | tee -a log-install.txt
-echo "bmon"  | tee -a log-install.txt
-echo "htop"  | tee -a log-install.txt
-echo "iftop"  | tee -a log-install.txt
-echo "mtr"  | tee -a log-install.txt
-echo "nethogs"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Script"  | tee -a log-install.txt
-echo "------"  | tee -a log-install.txt
-echo "screenfetch"  | tee -a log-install.txt
-echo "./ps_mem.py"  | tee -a log-install.txt
-echo "./speedtest_cli.py --share"  | tee -a log-install.txt
-echo "./bench-network.sh"  | tee -a log-install.txt
-echo "./user-login.sh"  | tee -a log-install.txt
-echo "./user-expire.sh"  | tee -a log-install.txt
-echo "./user-limit.sh 2"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Account Default (utk SSH dan VPN)"  | tee -a log-install.txt
-echo "---------------"  | tee -a log-install.txt
-echo "User     : masbakti"  | tee -a log-install.txt
-echo "Password : $PASS"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Fitur lain"  | tee -a log-install.txt
-echo "----------"  | tee -a log-install.txt
-echo "Webmin   : http://$MYIP:10000/"  | tee -a log-install.txt
-echo "vnstat   : http://$MYIP/vnstat/"  | tee -a log-install.txt
-echo "MRTG     : http://$MYIP/mrtg/"  | tee -a log-install.txt
-echo "Timezone : Asia/Jakarta"  | tee -a log-install.txt
-echo "Fail2Ban : [on]"  | tee -a log-install.txt
-echo "IPv6     : [off]"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "Log Installasi --> /root/log-install.txt"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "SILAHKAN REBOOT VPS ANDA !"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
-echo "==============================================="  | tee -a log-install.txt
+echo "Masbakti | WA: 085790808469"
+echo "==============================================="
+echo ""
+echo "Service"
+echo "-------"
+echo "OpenVPN  : TCP 1194 (client config : http://$MYIP/client.tar)"
+echo "OpenSSH  : 22, 143"
+echo "Dropbear : 109, 110, 443"
+echo "Squid    : 8080 (limit to IP SSH)"
+echo "badvpn   : badvpn-udpgw port 7300"
+echo ""
+echo "Script"
+echo "------"
+echo "./ps_mem.py"
+echo "./speedtest_cli.py --share"
+echo "./bench-network.sh"
+echo "./user-login.sh"
+echo "./user-expire.sh"
+echo "./user-limit.sh 2"
+echo ""
+echo "Account Default (utk SSH dan VPN)"
+echo "---------------"
+echo "User     : masbakti"
+echo "Password : $PASS"
+echo ""
+echo "Fitur lain"
+echo "----------"
+echo "Webmin   : http://$MYIP:10000/"
+echo "vnstat   : http://$MYIP/vnstat/"
+echo "MRTG     : http://$MYIP/mrtg/"
+echo "Timezone : Asia/Jakarta"
+echo "Fail2Ban : [on]"
+echo "IPv6     : [off]"
+echo ""
+echo "SILAHKAN REBOOT VPS ANDA !"
+echo ""
+echo "==============================================="
